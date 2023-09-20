@@ -1,20 +1,31 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:template/addtaskscreen.dart';
+import 'todolist.dart';
+import './api.dart';
 
+enum TaskFilter {
+  all,
+  active,
+  notActive,
+}
 
 void main() {
-  runApp(const MyApp());
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: const MyHomePage(title: 'To do list'),
-      theme: new ThemeData(
+    return ChangeNotifierProvider(
+      create: (context) => TodoList(),
+    child: MaterialApp(
+      theme: ThemeData(
         scaffoldBackgroundColor: Color(0xE5FAFAF3)
         ),
+        home: MyHomePage(title: 'To do list'),
+    ),
     );
   }
 }
@@ -27,13 +38,107 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 class _MyHomePageState extends State<MyHomePage> {
-  bool _checkbox = false;
+   TaskFilter _currentFilter = TaskFilter.all;
+
+  void _setFilter(TaskFilter filter) {
+    setState(() {
+      _currentFilter = filter;
+    });
+  }
+    Widget _buildTaskList() {
+    final todoProvider = Provider.of<TodoList>(context);
+    List<Todo> filteredTodos;
+
+ // Apply the filter
+    if (_currentFilter == TaskFilter.active) {
+      filteredTodos = todoProvider.todos.where((todo) => todo.isDone).toList();
+    } else if (_currentFilter == TaskFilter.notActive) {
+      filteredTodos = todoProvider.todos.where((todo) => !todo.isDone).toList();
+    } else {
+      filteredTodos = todoProvider.todos;
+    }
+
+    return ListView.builder(
+      itemCount: todoProvider.todos.length,
+      itemBuilder: (context, index) {
+        final todo = filteredTodos[index];
+        return ListTile(
+          title: Text(todo.title),
+          leading: Checkbox(
+            activeColor: Colors.black,
+            value: todo.isDone,
+            onChanged: (_) {
+              int originalIndex = todoProvider.todos.indexOf(todo);
+            todoProvider.todoStatus(originalIndex);
+            },
+          ),
+//delete button
+ trailing: 
+              IconButton(icon: Icon(
+                Icons.delete_outline,
+                size: 20.0,
+                color: Colors.brown[900],
+              ),
+              onPressed: () {
+                int originalIndex = todoProvider.todos.indexOf(todo);
+            todoProvider.deleteTodo(originalIndex);
+              },
+         )
+
+        );
+      },
+    );
+  }
+
    @override
 //appbar
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.black,
+        centerTitle: true,
+        title: Text(widget.title,
+        style: TextStyle ( 
+          fontSize: 25, 
+          fontWeight: FontWeight.w500,)), 
+          actions: [
+            IconButton(onPressed: () {
+              showDialog(
+                context: context, 
+                builder: (context) {
+                return SimpleDialog (
+                  title: Text('Filter Tasks'),
+                  children: [
+                    SimpleDialogOption(
+                      onPressed: () {
+                        _setFilter(TaskFilter.all);
+                        Navigator.pop(context);
+                      },
+                      child: Text('All tasks'),
+                    ),
+                    SimpleDialogOption(
+                      onPressed: () {
+                        _setFilter(TaskFilter.notActive);
+                        Navigator.pop(context);
+                      },
+                      child: Text('Tasks to do'),
+                    ),
+                    SimpleDialogOption(
+                      onPressed: () {
+                        _setFilter(TaskFilter.active);
+                        Navigator.pop(context);
+                      },
+                      child: Text('Tasks finished'),
+                    ),
+                  ],
+                );
+                });
+            }, 
+            icon: Icon(
+              kIsWeb ? Icons.more_vert: Icons.more_horiz 
+              ),
+            ),
+          ],
         leading: Container (
           alignment: Alignment.center, 
           child: Image.asset
@@ -41,60 +146,44 @@ class _MyHomePageState extends State<MyHomePage> {
         width: 35, 
         height: 35, 
       )
-      ),
-//title
-   title:  
-     Padding  (
-        padding: EdgeInsets.symmetric 
-        (horizontal: 400), 
-        child: Text(
-          widget.title, 
-          style: TextStyle(color: Color(0xFFFFFFFF), 
-          fontSize: 25, 
-          fontWeight: FontWeight.w500, 
-          ),
-          ),      
-      ),
+      ), 
     ),  
-//checkbox 1
-      body: Center( 
+    
+//new task button
+body: Stack(
+    children: [ 
+      _buildTaskList(),
+      Positioned(
+      bottom: 16,
+      left: 0,
+      right: 0,
       child:
-        Column(
-          children: [
-            Row(
+        Align (
+        alignment: Alignment.bottomCenter,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Checkbox(
-                  value: _checkbox,
-                  activeColor: Colors.black,             
-                  onChanged: (value) {
-                    setState(() {
-                      _checkbox = !_checkbox;
-                    });
+             FloatingActionButton.extended(
+                onPressed: () {
+                  Navigator.push(
+                    context, MaterialPageRoute(builder: (context) => AddTaskScreen())
+                    );
                   },
-                ),
-                Text(
-                 'something',
-                  style: TextStyle(fontWeight: FontWeight.bold,
-                  fontSize: 17),
-                  ),
-              ],
-            ),
-          ],
-        ),
-      ),
-//button
-      floatingActionButton: Align(
-              alignment: Alignment.bottomCenter,
-              child: FloatingActionButton.extended(
-                onPressed: () {},
+                  label: Text('Create New Task'),
                 backgroundColor: Colors.black,
-                icon: Icon( 
-                Icons.add,
-                  size: 24.0,
-                ),
-                label: Text('New Task'), 
-              ),
-    )
-   );
+           ),
+           SizedBox(width: 16),
+           FloatingActionButton.extended(
+            onPressed: () {gettodos();
+            }, 
+            label: Text('Load API'),
+            backgroundColor: Colors.black,
+            )
+              ]
+         )
+        )
+      )],
+      ),
+    );
   }
 }
