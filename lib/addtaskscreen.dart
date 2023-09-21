@@ -1,6 +1,10 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'todolist.dart';
+import 'api.dart' as api;
+import 'data.dart';
 
 class AddTaskScreen extends StatefulWidget {
   @override
@@ -9,6 +13,21 @@ class AddTaskScreen extends StatefulWidget {
 
 class _AddTaskScreenState extends State<AddTaskScreen> {
   final TextEditingController _textController = TextEditingController();
+
+  Future<void> addTodo (toDo todo) async{
+     try {
+     final url = Uri.parse('${api.ENDPOINT}/todos?key=${api.key}');
+     print('URL: $url');
+     http.Response response = await http.post(
+     url,
+     body: jsonEncode(todo.toJson()),
+     );
+     // Call the API to add a new to-do item
+     print(response.body);
+     } catch (e) {
+     print('Failed to add todo: $e');
+     }
+     }
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +55,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
           decoration: InputDecoration(labelText: 'Enter Task Name'),
           onChanged: (text) {
             // You can handle text changes here if needed
+
           },
         ),
       ),
@@ -45,15 +65,19 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
         left: 0,
         right: 0,
       child:
-      Align(alignment: Alignment.bottomCenter, 
-      child: FloatingActionButton.extended(
-        onPressed: () {
-          final newTodo = Todo(title: _textController.text);
-          todoProvider.addTodo(newTodo);
-           _textController.clear();
-          // Handle saving the task and navigating back to the previous screen here
-          Navigator.pop(context);
-        },
+     Align(
+            alignment: Alignment.bottomCenter,
+            child: FloatingActionButton.extended(
+              onPressed: () async {
+                final newTodo = toDo(
+                  id: DateTime.now().millisecondsSinceEpoch.toString(),
+                  title: _textController.text,
+                  done: false, // Assuming a new task is not done by default
+                );
+                await addTodo(newTodo);
+                Navigator.pop(context);
+            
+              },
         label: Text('Save Task'),
         backgroundColor: Colors.black,
               ),

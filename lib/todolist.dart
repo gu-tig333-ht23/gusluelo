@@ -1,24 +1,39 @@
 import 'package:flutter/material.dart';
 
-class Todo {
+class toDo {
+  final String? id;
   final String title;
-  bool isDone;
+  bool done;
 
-  Todo({
+  toDo({
+    required this.id,
     required this.title,
-    this.isDone = false,
+    this.done = false,
   });
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'done': done,
+    };
+  }
 }
+
 
 class TodoList extends ChangeNotifier {
 // Create a private list of Todo objects to store the todos. 
-  List<Todo> _todos = [];
+  List<toDo> _todos = [];
 
 // Define a getter to provide access to the list of todos.
-  List<Todo> get todos => _todos;
+  List<toDo> get todos => _todos;
+
+    void setTodos(List<toDo> todos) {
+    _todos = todos;
+    notifyListeners();
+  }
 
  // Method to add a new Todo to the list.
-  void addTodo(Todo todo) {
+  void addTodo(toDo todo) {
 // Add the provided todo to the list.
     _todos.add(todo);
 //notify listerners that the title has changed
@@ -28,12 +43,13 @@ class TodoList extends ChangeNotifier {
 // Method to toggle the status of a Todo at a specific index.
   void todoStatus(int index) {
 // Retrieve the Todo at the specified index.
-    Todo todo = _todos[index];
+    toDo todo = _todos[index];
 // Update the Todo by creating a new Todo object with the same title but
   // the opposite status (toggled).
-    _todos[index] = Todo(
+    _todos[index] = toDo(
+      id: todo.id,
       title: todo.title,
-      isDone: !todo.isDone,
+      done: !todo.done,
       );
       notifyListeners();
   }
