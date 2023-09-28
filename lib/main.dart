@@ -2,29 +2,38 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:template/addtaskscreen.dart';
-import 'todolist.dart';
-import './api.dart';
-import 'data.dart';
+import 'package:template/newlist.dart';
+import './api.dart' as api;
+import 'newlist.dart';
 import 'filtering.dart';
 
 void main() {
-  MyState state = MyState();
-  state.fetchTodos();
-  runApp(MyApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) => NewList(),
+        ),
+        Provider<api.Api>.value(
+          value: api.Api(),
+        ),
+      ],
+      child: MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) => TodoList(),
-    child: MaterialApp(
+    print('Rebuilding widget');
+    return MaterialApp(
       theme: ThemeData(
         scaffoldBackgroundColor: Color(0xE5FAFAF3)
         ),
         home: MyHomePage(title: 'To do list'),
-    ),
     );
+    
   }
 }
 
@@ -36,6 +45,7 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 class _MyHomePageState extends State<MyHomePage> {
+  
    TaskFilter _currentFilter = TaskFilter.all;
 
   void _setFilter(TaskFilter filter) {
@@ -44,37 +54,25 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  void _fetchAndSetTodos() async {
+  const String apiKey = '25df0750-6829-47ac-be32-0de39a38b327'; // Replace with your actual API key
+  await Provider.of<NewList>(context, listen: false).fetchAndSetTodos(apiKey);
+}
+
     @override
   void initState() {
     super.initState();
-    // Fetch todos when the app starts
-    _fetchTodos();
+    _fetchAndSetTodos();
   }
-
-  void _fetchTodos() async {
-  try {
-    List<ToDo> todos = await gettodos();  
-    List<toDo> convertedTodos = todos.map((todo) {
-      return toDo(
-        title: todo.title,
-        id: todo.id,
-        done: todo.done,
-      );
-    }).toList();
-
-    Provider.of<TodoList>(context, listen: false).setTodos(convertedTodos);
-  } catch (e) {
-    print('Failed to fetch todos: $e');
-  }
-}
 
   Widget _buildTaskList() {
-  final todoProvider = Provider.of<TodoList>(context);
-  List<toDo> filteredTodos = applyFilter(todoProvider.todos, _currentFilter);
+    NewList todoProvider = Provider.of<NewList>(context, listen: false);
+  List<api.ToDo> filteredTodos = applyFilter(todoProvider.apiTodos, _currentFilter);
 
   return ListView.builder(
     itemCount: filteredTodos.length,
     itemBuilder: (context, index) {
+      print('Building item $index');
       final todo = filteredTodos[index];
       return ListTile(
         title: Text(todo.title),
@@ -82,7 +80,7 @@ class _MyHomePageState extends State<MyHomePage> {
           activeColor: Colors.black,
           value: todo.done,
           onChanged: (_) {
-            int originalIndex = todoProvider.todos.indexOf(todo);
+            int originalIndex = todoProvider.apiTodos.indexOf(todo);
             todoProvider.todoStatus(originalIndex);
           },
         ),
@@ -93,9 +91,11 @@ class _MyHomePageState extends State<MyHomePage> {
             color: Colors.brown[900],
           ),
           onPressed: () async {
-            int originalIndex = todoProvider.todos.indexOf(todo);
-            todoProvider.deleteTodo(originalIndex);
-          },
+  String apiKey = '25df0750-6829-47ac-be32-0de39a38b327';
+  todoProvider.removeApiTodoById(todo.id!, apiKey);
+  todoProvider.fetchAndSetTodos(apiKey); 
+},
+
         ),
       );
     },
@@ -162,33 +162,37 @@ class _MyHomePageState extends State<MyHomePage> {
     ),  
     
 //new task button
-body: Stack(
-    children: [ 
-      _buildTaskList(),
-      Positioned(
-      bottom: 16,
-      left: 0,
-      right: 0,
-      child:
-        Align (
-        alignment: Alignment.bottomCenter,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-             FloatingActionButton.extended(
-                onPressed: () {
-                  print ('navigate button is pressed');
-                  Navigator.push(
-                    context, MaterialPageRoute(builder: (context) =>  AddTaskScreen(),
-                      )
-                    );
-                  },
-                  label: Text('Create New Task'),
-                backgroundColor: Colors.black,
-           ),
-    ])
-        )
-      )],
+body: Stack( children: [
+    Consumer<NewList>(
+            builder: (context, todoProvider, child) {
+              return _buildTaskList();
+            },
+          ),
+    Container( 
+  margin: EdgeInsets.only(bottom: 16),
+  child: Align(
+    alignment: Alignment.bottomCenter,
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        FloatingActionButton.extended(
+          onPressed: () {
+            print('navigate button is pressed');
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => AddTaskScreen(),
+              ),
+            );
+          },
+          label: Text('Create New Task'),
+          backgroundColor: Colors.black,
+        ),
+      ],
+    ),
+  ),
+),
+  ],
       ),
     );
   }

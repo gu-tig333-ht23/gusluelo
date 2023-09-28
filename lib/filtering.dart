@@ -1,4 +1,4 @@
-import 'todolist.dart';
+import 'api.dart';
 
 enum TaskFilter {
   all,
@@ -6,7 +6,7 @@ enum TaskFilter {
   notActive,
 }
 
-List<toDo> applyFilter(List<toDo> todos, TaskFilter filter) {
+List<ToDo> applyFilter(List<ToDo> todos, TaskFilter filter) {
   switch (filter) {
     case TaskFilter.active:
       return todos.where((todo) => todo.done).toList();

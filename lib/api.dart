@@ -1,13 +1,9 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:template/todolist.dart' as td;
 
-const String ENDPOINT = 'https://todoapp-api.apps.k8s.gu.se';
-const String key = '25df0750-6829-47ac-be32-0de39a38b327';
-
-class ToDo{
+class ToDo {
   final String title;
-  final  String? id;
+  final String? id;
   bool done;
 
   ToDo({
@@ -16,13 +12,14 @@ class ToDo{
     required this.done,
   });
 
-    factory ToDo.fromJson(Map<String, dynamic> json) {
+  factory ToDo.fromJson(Map<String, dynamic> json) {
     return ToDo(
       title: json['title'],
       id: json['id'],
       done: json['done'],
     );
   }
+
   Map<String, dynamic> toJson() {
     return {
       'title': title,
@@ -32,24 +29,89 @@ class ToDo{
   }
 }
 
-Future<List<ToDo>> gettodos() async {
-  http.Response response = await http.get(Uri.parse('$ENDPOINT/todos'));
-  String body = response.body;
-  Map<String, dynamic> jsonResponse = jsonDecode(body);
-  List todosjson = jsonResponse['Todos'];
-  return todosjson.map((json) => ToDo.fromJson(json)).toList();
-}
+class Api {
+  static const String ENDPOINT = 'https://todoapp-api.apps.k8s.gu.se';
 
-Future<void> addToDo (ToDo todo) async {
-try {
-    // Call the API to add a new to-do item
-    http.Response response = await http.post(
-      Uri.parse('$ENDPOINT/todos'),
+  Future<List<ToDo>> gettodos(String apiKey) async {
+    try {
+      Uri urlWithKey = Uri.parse('$ENDPOINT/todos?key=$apiKey');
+
+      http.Response response = await http.get(urlWithKey);
+
+      if (response.statusCode == 200) {
+        List<dynamic> jsonResponse = jsonDecode(response.body);
+        List<ToDo> todosList =
+            jsonResponse.map((json) => ToDo.fromJson(json)).toList();
+        return todosList;
+      } else {
+        throw Exception('Failed to get todos: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Failed to get todos: $e');
+    }
+  }
+
+  Future<void> addToDo(ToDo todo, String apiKey) async {
+    try {
+      final url = Uri.parse('$ENDPOINT/todos?key=$apiKey');
+
+      http.Response response = await http.post(
+        url,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode(todo.toJson()),
+      );
+
+      if (response.statusCode == 200) {
+        print('Todo added successfully.');
+      } else {
+        throw Exception('Failed to add todo: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Failed to add todo: $e');
+    }
+  }
+
+  Future<void> deleteToDo(String todoId, String apiKey) async {
+    try {
+      final url = Uri.parse('$ENDPOINT/todos/$todoId?key=$apiKey');
+
+      http.Response response = await http.delete(
+        url,
+      );
+
+      if (response.statusCode == 200) {
+        print('Todo deleted successfully.');
+      } else {
+        throw Exception('Failed to delete todo: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Failed to delete todo: $e');
+    }
+  }
+
+  Future<void> updateToDo(ToDo todo, String apiKey) async {
+  try {
+    final url = Uri.parse('$ENDPOINT/todos/${todo.id}?key=$apiKey');
+
+    http.Response response = await http.put(
+      url,
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: jsonEncode(todo.toJson()),
     );
-    print(response.body);
-    } catch (e) {
-    print('Failed to add todo: $e');
+
+    if (response.statusCode == 200) {
+      print('Todo updated successfully.');
+    } else {
+      throw Exception('Failed to update todo: ${response.statusCode}');
+    }
+  } catch (e) {
+    throw Exception('Failed to update todo: $e');
+  }
 }
 }
+
 

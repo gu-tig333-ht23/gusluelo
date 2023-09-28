@@ -30,6 +30,7 @@ Update todo with :id
 Takes a Todo as payload (body), and updates title and done for the already existing Todo with id in URL.
 
 ### DELETE /todos
+Deletes a Todo with id in URL
 
 
 
