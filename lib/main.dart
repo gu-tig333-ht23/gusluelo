@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:template/addtaskscreen.dart';
 import 'package:template/newlist.dart';
 import './api.dart' as api;
-import 'newlist.dart';
 import 'filtering.dart';
 
 void main() {
@@ -55,7 +54,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _fetchAndSetTodos() async {
-  const String apiKey = '25df0750-6829-47ac-be32-0de39a38b327'; // Replace with your actual API key
+  final apiKey = api.Api.getApiKey();
   await Provider.of<NewList>(context, listen: false).fetchAndSetTodos(apiKey);
 }
 
@@ -68,20 +67,25 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget _buildTaskList() {
     NewList todoProvider = Provider.of<NewList>(context, listen: false);
   List<api.ToDo> filteredTodos = applyFilter(todoProvider.apiTodos, _currentFilter);
-
+final apiKey = api.Api.getApiKey();
   return ListView.builder(
     itemCount: filteredTodos.length,
     itemBuilder: (context, index) {
       print('Building item $index');
       final todo = filteredTodos[index];
+      bool isDone = todo.done;
       return ListTile(
         title: Text(todo.title),
         leading: Checkbox(
           activeColor: Colors.black,
-          value: todo.done,
-          onChanged: (_) {
+          value: isDone,
+          onChanged: (newValue) {
             int originalIndex = todoProvider.apiTodos.indexOf(todo);
             todoProvider.todoStatus(originalIndex);
+    todoProvider.updateTaskStatus(todo, newValue ?? false, apiKey);
+    setState(() {
+              todo.done = newValue ?? false;
+            });
           },
         ),
         trailing: IconButton(
@@ -91,9 +95,8 @@ class _MyHomePageState extends State<MyHomePage> {
             color: Colors.brown[900],
           ),
           onPressed: () async {
-  String apiKey = '25df0750-6829-47ac-be32-0de39a38b327';
-  todoProvider.removeApiTodoById(todo.id!, apiKey);
-  todoProvider.fetchAndSetTodos(apiKey); 
+          await todoProvider.removeApiTodoById(todo.id!, apiKey);
+          await todoProvider.fetchAndSetTodos(apiKey); 
 },
 
         ),

@@ -29,14 +29,20 @@ class ToDo {
   }
 }
 
+
 class Api {
   static const String ENDPOINT = 'https://todoapp-api.apps.k8s.gu.se';
+
+  static String getApiKey() {
+    return '0d2baa5d-bd44-467c-ac5b-1606ee7c78db';
+  }
 
   Future<List<ToDo>> gettodos(String apiKey) async {
     try {
       Uri urlWithKey = Uri.parse('$ENDPOINT/todos?key=$apiKey');
-
+      print('Request URL: $urlWithKey'); 
       http.Response response = await http.get(urlWithKey);
+      print(response.body);
 
       if (response.statusCode == 200) {
         List<dynamic> jsonResponse = jsonDecode(response.body);
