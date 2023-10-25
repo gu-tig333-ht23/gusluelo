@@ -1,6 +1,5 @@
 import './api.dart' as api;
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 
 class NewList extends ChangeNotifier {
   List<api.ToDo> _apiTodos = [];
@@ -10,7 +9,6 @@ class NewList extends ChangeNotifier {
   Future<void> fetchAndSetTodos(String apiKey) async {
     try {
       _apiTodos = await api.Api().gettodos(apiKey);
-      // Convert the fetched todos and set them
       List<api.ToDo> convertedTodos = _apiTodos.map((todo) {
         return api.ToDo(
           title: todo.title,
@@ -36,7 +34,7 @@ class NewList extends ChangeNotifier {
     notifyListeners();
   }
 
- void removeApiTodoById(String id, String apiKey) async {
+ Future removeApiTodoById(String id, String apiKey) async {
   try {
     List<String> todoIds = _apiTodos.map((todo) => todo.id).toList().cast<String>();
     print('Todo IDs: $todoIds');
@@ -81,11 +79,22 @@ class NewList extends ChangeNotifier {
       print('Failed to update todo: $e');
     }
   }
+
+  Future<void> updateTaskStatus(api.ToDo task, bool newStatus, String apiKey) async {
+  task.done = newStatus;
+  try {
+    await api.Api().updateToDo(task, apiKey);
+  } catch (e) {
+    print('Failed to update task status: $e');
+  }
 }
+}
+
+
 
 void main() async {
   final newList = NewList();
-  const String apiKey = '25df0750-6829-47ac-be32-0de39a38b327';
+  final apiKey = api.Api.getApiKey();
   await newList.fetchAndSetTodos(apiKey);
   print('Fetched Todos: ${newList.apiTodos}');
 }

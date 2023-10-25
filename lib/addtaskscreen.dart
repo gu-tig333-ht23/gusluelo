@@ -11,24 +11,6 @@ class AddTaskScreen extends StatefulWidget {
 class _AddTaskScreenState extends State<AddTaskScreen> {
   final TextEditingController _textController = TextEditingController();
 
-Future<void> _saveTaskAndRefresh(BuildContext context) async {
-  final todoProvider = Provider.of<NewList>(context, listen: false);
-
-  api.ToDo newTask = api.ToDo(
-    title: _textController.text,
-    done: false,
-  );
-
-  const String apiKey = '25df0750-6829-47ac-be32-0de39a38b327';
-  await context.read<api.Api>().addToDo(newTask, apiKey);
-
-  try {
-    await todoProvider.fetchAndSetTodos(apiKey);
-  } catch (e) {
-    print('Failed to fetch and set todos: $e');
-  }
-}
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -72,7 +54,7 @@ Future<void> _saveTaskAndRefresh(BuildContext context) async {
                       title: _textController.text,
                       done: false,
                     );
-                    const String apiKey = '25df0750-6829-47ac-be32-0de39a38b327';
+                    final apiKey = api.Api.getApiKey();
                     await context.read<api.Api>().addToDo(newTodo, apiKey);
                     await Provider.of<NewList>(context, listen: false).fetchAndSetTodos(apiKey);
 
